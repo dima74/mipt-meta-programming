@@ -1,4 +1,5 @@
 #include <iostream>
+using namespace std;
 
 class Singleton {
 private:
@@ -11,11 +12,11 @@ public:
 
 	static Singleton &getInstance() {
 		static Singleton instance;
-		return *instance;
+		return instance;
 	}
 
 	void printMessage() {
-		std::cout << "hello" << std::endl;
+		cout << "hello" << endl;
 	}
 };
 
