@@ -2,6 +2,7 @@
 #include <cassert>
 #include "length.h"
 #include "erase.h"
+#include "../base.h"
 using std::is_same;
 
 void testLength() {
@@ -12,12 +13,34 @@ void testLength() {
 }
 
 void testErase() {
+	// length = 1
 	using Int = TypeList<int>;
-	// using Char = TypeList<char>;
+	using Char = TypeList<char>;
+	// length = 2
+	using IntInt = TypeList<int, int>;
 	using IntChar = TypeList<int, char>;
+	using CharInt = TypeList<char, int>;
+	using CharChar = TypeList<char, char>;
+	// length = 3
+	using IntIntChar = TypeList<int, int, char>;
+	using IntBoolChar = TypeList<int, bool, char>;
 
-	static_assert(is_same<EmptyList, Erase<Int, int>::Result>::value);
-	static_assert(!is_same<Int, Erase<Int, char>::Result>::value);
+	// length = 0
+	static_assert(is_same<Erase<EmptyList, int>::Result, EmptyList>::value);
+	// length = 1
+	static_assert(is_same<Erase<Int, int>::Result, EmptyList>::value);
+	static_assert(is_same<Erase<Int, char>::Result, Int>::value);
+	// length = 2
+	static_assert(is_same<Erase<IntInt, int>::Result, Int>::value);
+	static_assert(is_same<Erase<IntChar, int>::Result, Char>::value);
+	static_assert(is_same<Erase<CharInt, int>::Result, Char>::value);
+	static_assert(is_same<Erase<CharChar, int>::Result, CharChar>::value);
+	// length = 3
+	static_assert(is_same<Erase<IntIntChar, int>::Result, IntChar>::value);
+	static_assert(is_same<Erase<IntIntChar, char>::Result, IntInt>::value);
+	static_assert(is_same<Erase<IntBoolChar, int>::Result, TypeList<bool, char>>::value);
+	static_assert(is_same<Erase<IntBoolChar, bool>::Result, IntChar>::value);
+	static_assert(is_same<Erase<IntBoolChar, char>::Result, TypeList<int, bool>>::value);
 }
 
 int main() {

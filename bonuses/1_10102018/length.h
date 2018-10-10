@@ -3,9 +3,9 @@
 
 #include "type_list.h"
 
-template<typename TypeList>
+template<typename List>
 struct Length {
-	static constexpr int value = Length<typename TypeList::tail>::value + 1;
+	static constexpr int value = Length<typename List::tail>::value + 1;
 };
 
 template<>
@@ -14,7 +14,7 @@ struct Length<NullType> {
 };
 
 template<>
-struct Length<TypeList<>> {
+struct Length<EmptyList> {
 	static constexpr int value = 0;
 };
 

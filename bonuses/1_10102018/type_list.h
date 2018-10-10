@@ -3,13 +3,13 @@
 
 struct NullType {};
 
-template<typename ... T>
+template<typename ... Types>
 struct TypeList;
 
-template<typename T, typename ... U>
-struct TypeList<T, U...> {
-	using head = T;
-	using tail = TypeList<U...>;
+template<typename First, typename ... Rest>
+struct TypeList<First, Rest...> {
+	using head = First;
+	using tail = TypeList<Rest...>;
 };
 
 template<typename T>
@@ -26,9 +26,11 @@ struct TypeList<> {
 
 using EmptyList = TypeList<>;
 
-template<typename TypeList>
+// у нас есть проблема, что EmptyList это TypeList { head = tail = NullType }, хотя было гораздо лучше, если EmptyList был бы NullType
+// поэтому нужна данная функция
+template<typename List>
 struct Normalized {
-	using type = TypeList;
+	using type = List;
 };
 
 template<>
@@ -36,9 +38,9 @@ struct Normalized<EmptyList> {
 	using type = NullType;
 };
 
-template<typename TypeList>
+template<typename List>
 struct Denormalized {
-	using type = TypeList;
+	using type = List;
 };
 
 template<>
