@@ -2,7 +2,6 @@
 #include <cassert>
 #include "length.h"
 #include "erase.h"
-#include "../base.h"
 using std::is_same;
 
 void testLength() {
