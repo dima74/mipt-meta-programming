@@ -1,4 +1,4 @@
-#include "./hierarchy.h"
+#include "hierarchy_scatter.h"
 
 #include <string>
 #include <cassert>

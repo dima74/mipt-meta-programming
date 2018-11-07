@@ -10,4 +10,8 @@ void printType() {
 	cout << "\n" << __PRETTY_FUNCTION__ << endl;
 }
 
+// type detector (works by generating error in compile-time)
+template<typename T>
+class TD;
+
 #endif
