@@ -23,10 +23,13 @@ struct IAbstractFactoryUnit {
 	virtual ~IAbstractFactoryUnit() {}
 };
 
-using IArmyFactory = GenScatterHierarchy<
-		UnitsList,
-		IAbstractFactoryUnit
->;
+template<typename TypeList>
+struct IArmyFactory : public GenScatterHierarchy<TypeList, IAbstractFactoryUnit> {
+	template<typename T>
+	T *create() {
+		return static_cast<IAbstractFactoryUnit<T> *>(this)->create(TypeDescriptor<T>());
+	}
+};
 
 // реализация
 
@@ -40,11 +43,12 @@ struct CFactoryUnit : public BaseType {
 using CArmyFactory = GenLinearHierarchy<
 		UnitsList,
 		CFactoryUnit,
-		IArmyFactory
+		IArmyFactory<UnitsList>
 >;
 
 int main() {
-	IArmyFactory *factory = new CArmyFactory();
-	Archer *archer = static_cast<IAbstractFactoryUnit<Archer>*>(factory)->create(TypeDescriptor<Archer>());
+	IArmyFactory<UnitsList> *factory = new CArmyFactory();
+	Archer *archer = factory->create<Archer>();
+	Cavalry *cavalry = factory->create<Cavalry>();
 	return 0;
 }
