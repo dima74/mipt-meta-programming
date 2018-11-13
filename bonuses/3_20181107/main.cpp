@@ -6,15 +6,15 @@ struct Archer {};
 struct Cavalry {};
 using UnitsList = TypeList<Infantry, Archer, Cavalry>;
 
-template<typename T, typename BaseType>
-struct FactoryUnit : public BaseType {
-	T *create(TypeDescriptor<T>) {
-		return new T();
+template<typename T, template<typename> typename Allocator>
+struct FactoryUnit {
+	T *create(Allocator<T> &allocator) {
+		return allocator.allocate();
 	}
 };
 
 using IArmyFactory = IAbstractFactory<UnitsList>;
-using CArmyFactory = CAbstractFactory<UnitsList, FactoryUnit>;
+using CArmyFactory = CAbstractFactory<UnitsList, FactoryUnit, AllocatorUsingNew>;
 
 int main() {
 	IArmyFactory *factory = new CArmyFactory();
