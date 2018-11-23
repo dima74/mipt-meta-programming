@@ -13,7 +13,7 @@ struct EraseImpl<TypeList<First, Rest...>, Deleted> {
 private:
 	using ResultWithoutFirst = typename EraseImpl<TypeList<Rest...>, Deleted>::Result;
 public:
-	using Result = typename AppendFront<First, ResultWithoutFirst>::Result;
+	using Result = typename AppendFront<First, ResultWithoutFirst>::result;
 };
 
 // удаление типа из пустого списка

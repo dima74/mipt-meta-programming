@@ -8,12 +8,12 @@ struct AppendFront;
 
 template<typename T, typename ... U>
 struct AppendFront<T, TypeList<U...>> {
-	using Result = TypeList<T, U...>;
+	using result = TypeList<T, U...>;
 };
 
 template<typename T>
 struct AppendFront<T, NullType> {
-	using Result = TypeList<T>;
+	using result = TypeList<T>;
 };
 
 #endif

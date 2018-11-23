@@ -9,12 +9,12 @@ struct Holder {
 	T value;
 };
 
-struct Point {
+struct Value {
 	int x;
 	int y;
 };
 
-using Hierarchy = GenScatterHierarchy<TypeList<int, string, Point>, Holder>;
+using Hierarchy = GenScatterHierarchy<TypeList<int, string, Value>, Holder>;
 
 template<typename T, typename Hierarchy>
 T get_value(Hierarchy hierarchy) {
@@ -34,8 +34,8 @@ int main() {
 	(static_cast<Holder<string> &>(hierarchy)).value = "bar";
 	assert(get_value<string>(hierarchy) == "bar");
 
-	(static_cast<Holder<Point> &>(hierarchy)).value = {3, 4};
-	assert(get_value<Point>(hierarchy).x == 3);
-	assert(get_value<Point>(hierarchy).y == 4);
+	(static_cast<Holder<Value> &>(hierarchy)).value = {3, 4};
+	assert(get_value<Value>(hierarchy).x == 3);
+	assert(get_value<Value>(hierarchy).y == 4);
 	return 0;
 }
