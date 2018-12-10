@@ -14,5 +14,6 @@ add_executable(bonus3 bonuses/3_20181107/main.cpp)
 
 add_executable(task1 tasks/1_20180926/main.cpp)
 add_executable(task2 tasks/2_20181128/main.cpp)
+add_executable(task3 tasks/3/main.cpp)
 
 add_executable(temp temp/main.cpp)
