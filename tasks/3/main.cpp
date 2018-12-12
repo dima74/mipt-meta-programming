@@ -28,7 +28,6 @@ T1 decompressStage1(TypeInFile &valueFromFile) {
 template<typename T1, typename T2>
 static void readOneValue(istream &input, vector<byte> &data, void (*decompressFunction)(T1 &)) {
 	constexpr bool hasT2 = !is_same_v<T2, NoneType>;
-	bool hasFunction = decompressFunction != nullptr;
 	using TypeInFile = conditional_t<hasT2, T2, T1>;
 
 	TypeInFile valueFromFile;
@@ -36,7 +35,7 @@ static void readOneValue(istream &input, vector<byte> &data, void (*decompressFu
 	if (!input) throw runtime_error(string("Error while reading type: ") + getTypeName<TypeInFile>());
 
 	T1 valueAfterStage1 = decompressStage1<T1, T2, TypeInFile>(valueFromFile);
-	if (hasFunction) {
+	if (decompressFunction != nullptr) {
 		decompressFunction(valueAfterStage1);
 	}
 
