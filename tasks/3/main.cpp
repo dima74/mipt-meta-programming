@@ -12,9 +12,8 @@
 using namespace std;
 
 struct NoneType {};
-struct NoDecompressor {};
 
-// очень грустно что нет constexpr тернарного оператора, либо частичной специализации для шаблона
+// очень грустно что нет constexpr тернарного оператора, либо частичной специализации для шаблонной функции
 template<typename T1, typename T2, typename TypeInFile>
 T1 decompressStage1(TypeInFile &valueFromFile) {
 	if constexpr (is_same_v<T2, NoneType>) {
@@ -26,10 +25,10 @@ T1 decompressStage1(TypeInFile &valueFromFile) {
 	}
 }
 
-template<typename T1, typename T2, typename T3>
-static void readOneValue(istream &input, vector<byte> &data) {
+template<typename T1, typename T2>
+static void readOneValue(istream &input, vector<byte> &data, void (*decompressFunction)(T1 &)) {
 	constexpr bool hasT2 = !is_same_v<T2, NoneType>;
-	constexpr bool hasFunction = !is_same_v<T3, NoDecompressor>;
+	bool hasFunction = decompressFunction != nullptr;
 	using TypeInFile = conditional_t<hasT2, T2, T1>;
 
 	TypeInFile valueFromFile;
@@ -37,39 +36,57 @@ static void readOneValue(istream &input, vector<byte> &data) {
 	if (!input) throw runtime_error(string("Error while reading type: ") + getTypeName<TypeInFile>());
 
 	T1 valueAfterStage1 = decompressStage1<T1, T2, TypeInFile>(valueFromFile);
-	if constexpr (hasFunction) {
-		T3::decompress(valueAfterStage1);
+	if (hasFunction) {
+		decompressFunction(valueAfterStage1);
 	}
 
 	data.resize(data.size() + sizeof(T1));
 	memcpy(&data[data.size() - sizeof(T1)], &valueAfterStage1, sizeof(T1));
 }
 
-template<size_t i, typename TypeList1, typename TypeList2, typename ...TypeList3>
+template<size_t i, typename TypeList1, typename TypeList2>
 struct ReaderForOneType;
 
-template<size_t i, typename ...Types1, typename ...Types2, typename ...Types3>
-struct ReaderForOneType<i, TypeList<Types1...>, TypeList<Types2...>, TypeList<Types3...>> {
-	static void read(istream &input, vector<byte> &data) {
+template<size_t i, typename ...Types1, typename ...Types2>
+struct ReaderForOneType<i, TypeList<Types1...>, TypeList<Types2...>> {
+	static void read(istream &input, vector<byte> &data, const vector<void *> &decompressFunctionPointers) {
 		// https://stackoverflow.com/a/15953673/5812238
 		using T1 = tuple_element_t<i, tuple<Types1...>>;
 		using T2 = tuple_element_t<i, tuple<Types2...>>;
-		using T3 = tuple_element_t<i, tuple<Types3...>>;
-		readOneValue<T1, T2, T3>(input, data);
+		void (*decompressFunction)(T1 &) = (void (*)(T1 &)) decompressFunctionPointers[i];
+		readOneValue<T1, T2>(input, data, decompressFunction);
 	}
 };
 
-template<typename TypeList1, typename TypeList2, typename TypeList3, size_t ...I>
-void readNextLineImpl(istream &input, vector<byte> &data, index_sequence<I...>) {
-	(ReaderForOneType<I, TypeList1, TypeList2, TypeList3>::read(input, data), ...);
+template<typename TypeList1, typename TypeList2, size_t ...I>
+void readNextLineImpl(istream &input, vector<byte> &data, const vector<void *> &decompressFunctionPointers, index_sequence<I...>) {
+	(ReaderForOneType<I, TypeList1, TypeList2>::read(input, data, decompressFunctionPointers), ...);
 }
 
-template<typename TypeList1, typename TypeList2, typename TypeList3>
+template<typename TypeList1, typename ... FunctionsExceptFirst>
+void addFunctionPointersToVector(vector<void *> &decompressFunctionPointers, void (*function)(typename TypeList1::head &), FunctionsExceptFirst... functionsExceptFirst) {
+	decompressFunctionPointers.push_back((void *) function);
+	if constexpr (sizeof...(FunctionsExceptFirst) > 0) {
+		addFunctionPointersToVector<typename TypeList1::tail>(decompressFunctionPointers, functionsExceptFirst...);
+	}
+}
+
+template<typename TypeList1, typename TypeList2>
 class Reader {
 private:
 	ifstream input{"input.txt"};
 
+	// список указателей на функции
+	vector<void *> decompressFunctionPointers;
+
 public:
+	template<typename ... Functions>
+	Reader(Functions... functions) {
+		static_assert(Length<TypeList1>::value == Length<TypeList2>::value, "Lengths of TypeList1 and TypeList2 must match");
+		static_assert(sizeof...(functions) == Length<TypeList1>::value, "number of Reader constructor arguments should match length of TypeList1");
+		addFunctionPointersToVector<TypeList1>(decompressFunctionPointers, functions...);
+	}
+
 	void *readNextLine() {
 		string line;
 		getline(input, line);
@@ -77,7 +94,7 @@ public:
 
 		vector<byte> data;
 		istringstream input_stream(line);
-		readNextLineImpl<TypeList1, TypeList2, TypeList3>(input_stream, data, make_index_sequence<Length<TypeList1>::value>());
+		readNextLineImpl<TypeList1, TypeList2>(input_stream, data, decompressFunctionPointers, make_index_sequence<Length<TypeList1>::value>());
 
 		byte *result = (byte *) operator new(data.size());
 		copy(data.begin(), data.end(), result);
@@ -109,19 +126,16 @@ istream &operator>>(istream &in, T2 &value) {
 	return in >> value.s;
 }
 
-struct T1Decompressor {
-	static void decompress(T1 &value) {
-		value.x += 16;
-		value.y += 16;
-	}
-};
+void T1Decompress(T1 &value) {
+	value.x += 16;
+	value.y += 16;
+}
 
 int main() {
 	Reader<
-			TypeList<int,/*       */ char,/*      */ T1,/*        */ T1,/*        */ T1,/*        */ T1/*        */>,
-			TypeList<NoneType,/*  */ NoneType,/*  */ NoneType,/*  */ NoneType,/*  */ T2,/*        */ T2/*        */>,
-			TypeList<NoDecompressor, NoDecompressor, NoDecompressor, T1Decompressor, NoDecompressor, T1Decompressor>
-	> reader;
+			TypeList<int,/*     */ char,/*    */ T1,/*      */ T1,/*      */ T1,/* */ T1>,
+			TypeList<NoneType,/**/ NoneType,/**/ NoneType,/**/ NoneType,/**/ T2,/* */ T2>
+	> reader(/*    */nullptr,/* */ nullptr,/* */ nullptr,/* */ T1Decompress, nullptr, T1Decompress);
 
 	vector<size_t> sizes = {sizeof(int), sizeof(char), sizeof(T1), sizeof(T1), sizeof(T1), sizeof(T1)};
 	for (int line = 0; line < 2; ++line) {
